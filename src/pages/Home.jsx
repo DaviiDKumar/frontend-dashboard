@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
-import HeroImage from "/home.jpg"; // ensure this path is correct
+import HeroImage from "/home.jpg"; 
 
-// Visual elements for a "filling" UI
+// Visual elements
 const CheckIcon = () => (
   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
@@ -16,23 +16,40 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get("/auth/check", { withCredentials: true })
-      .then((res) => setRole(res.data.role))
-      .catch(() => setRole(null))
-      .finally(() => setLoading(false));
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      
+      // ✅ Only call backend if we have a valid-looking token
+      if (token && token !== "undefined" && token !== "null") {
+        try {
+          const res = await API.get("/auth/check");
+          setRole(res.data.role);
+        } catch (err) {
+          console.error("Auth Check Error:", err);
+          console.warn("Home session check failed");
+          localStorage.clear(); // Clear bad data
+          setRole(null);
+        }
+      } else {
+        setRole(null);
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 font-black text-slate-400 uppercase tracking-widest text-xs">Authenticating</p>
+        <p className="mt-4 font-black text-slate-400 uppercase tracking-widest text-xs">Synchronizing</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fcfdfe] text-slate-900 font-sans selection:bg-blue-100">
+    <div className="min-h-screen bg-[#fcfdfe] text-slate-900 font-sans selection:bg-blue-100 relative overflow-x-hidden">
       
       {/* Decorative Background Elements */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-blue-50/50 to-transparent -z-10" />
@@ -83,11 +100,9 @@ export default function Home() {
                     <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="user" />
                   </div>
                 ))}
-               
               </div>
             </div>
 
-            {/* Micro-Features Grid */}
             <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100 max-w-md mx-auto lg:mx-0">
                <div className="flex items-center gap-3">
                  <div className="bg-green-50 p-1 rounded-md"><CheckIcon /></div>
@@ -117,7 +132,6 @@ export default function Home() {
                 alt="DATATech Dashboard Preview"
                 className="w-full max-w-2xl rounded-[2rem] object-cover shadow-inner"
               />
-              {/* Floating Stat Card */}
               <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-xl border border-slate-50 hidden md:block animate-bounce-slow">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Leads</p>
                 <p className="text-3xl font-black text-slate-900">12,482+</p>
@@ -130,7 +144,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer Branding */}
       <footer className="mt-12 py-10 border-t border-slate-100 text-center">
         <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em]">
           &copy; 2026 DATATechServices. All Rights Reserved.

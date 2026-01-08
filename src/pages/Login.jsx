@@ -13,7 +13,9 @@ export default function Login() {
   // ✅ 1. Check if user is already logged in
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token || token === "undefined") {
+    
+    // Check for common 'broken' storage strings
+    if (!token || token === "undefined" || token === "null") {
       setChecking(false);
       return;
     }
@@ -24,6 +26,7 @@ export default function Login() {
         navigate(role === "admin" ? "/admin" : "/user", { replace: true });
       })
       .catch(() => {
+        // If the token is invalid, clear storage so we don't try again
         localStorage.clear();
         setChecking(false);
       });
@@ -38,11 +41,9 @@ export default function Login() {
     try {
       const res = await API.post("/auth/login", { email, password });
       
-      // ✅ Explicitly map keys to avoid 'undefined'
-      const token = res.data.token;
-      const role = res.data.role;
-      const username = res.data.username;
+      const { token, role, username } = res.data;
 
+      // ✅ Validation to ensure we don't save empty strings
       if (token && role) {
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
@@ -59,35 +60,53 @@ export default function Login() {
     }
   };
 
-  if (checking) return <div className="flex justify-center items-center min-h-screen">Verifying Session...</div>;
+  if (checking) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-slate-50">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Verifying Session</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">DataTech Login</h2>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm">{error}</div>}
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <form onSubmit={handleSubmit} className="bg-white p-10 rounded-[2rem] shadow-xl w-full max-w-md border border-slate-100">
+        <div className="text-center mb-8">
+            <h2 className="text-2xl font-black uppercase tracking-tight">Data<span className="text-blue-600">Tech</span></h2>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-1">Authorized Access Only</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-2xl mb-6 text-xs font-bold border border-red-100 animate-pulse">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4">
           <input 
             type="email" 
+            autoComplete="username"
             placeholder="Work Email" 
-            className="w-full p-4 bg-slate-50 rounded-xl border-none outline-blue-500"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-sm"
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
             required 
           />
           <input 
             type="password" 
+            autoComplete="current-password"
             placeholder="Password" 
-            className="w-full p-4 bg-slate-50 rounded-xl border-none outline-blue-500"
+            className="w-full p-4 bg-slate-50 rounded-2xl border-none outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-sm"
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
             required 
           />
           <button 
             disabled={loading}
-            className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-blue-600 transition-all"
+            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-blue-600 shadow-lg active:scale-95 transition-all disabled:opacity-50"
           >
-            {loading ? "Verifying..." : "Sign In"}
+            {loading ? "Authenticating..." : "Sign In to System"}
           </button>
         </div>
       </form>

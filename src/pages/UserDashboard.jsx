@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 
+// Icons
 const DownloadIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
@@ -18,14 +19,20 @@ export default function UserDashboard() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { fetchFiles(); }, []);
+  // ✅ Safety Check on Mount
+  useEffect(() => { 
+    const token = localStorage.getItem("token");
+    if (token && token !== "undefined") {
+        fetchFiles(); 
+    }
+  }, []);
 
   const fetchFiles = async () => {
     setLoading(true);
     try {
       const res = await API.get("/files");
-      // The backend now returns { files: [...] }
       const data = res.data.files || [];
+      // Sort by newest first
       const sorted = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setFiles(sorted);
     } catch (err) {
@@ -46,15 +53,19 @@ export default function UserDashboard() {
 
   const downloadFile = async (id, fileName) => {
     try {
+      // ✅ Using API instance ensures the Bearer token is attached
       const res = await API.get(`/files/download/${id}`, { responseType: "blob" });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a); // Required for some browsers
       a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Download Error:", err);
-            alert("Download failed");
+      alert("Permission denied or file not found.");
     }
   };
 
@@ -71,11 +82,12 @@ export default function UserDashboard() {
                <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
                <p className="text-blue-600 font-black tracking-[0.2em] uppercase text-[10px]">Lead Inventory</p>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">Your Assignments</h1>
+            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight uppercase">Your Assignments</h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="bg-white px-7 py-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+            {/* ✅ Canonical class: rounded-3xl */}
+            <div className="bg-white px-7 py-5 rounded-3xl border border-slate-100 shadow-sm">
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Your Total Leads</p>
               <div className="flex items-baseline gap-1">
                 <p className="text-3xl font-black text-slate-900">{totalUserLeads.toLocaleString()}</p>
@@ -91,39 +103,41 @@ export default function UserDashboard() {
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Querying Database...</p>
           </div>
         ) : files.length === 0 ? (
-          <div className="bg-white border-2 border-dashed border-slate-100 rounded-[3rem] p-24 text-center">
-            <p className="text-slate-400 font-black uppercase text-xs tracking-widest">No Leads Assigned</p>
+          /* ✅ Canonical class: rounded-4xl */
+          <div className="bg-white border-2 border-dashed border-slate-100 rounded-4xl p-24 text-center">
+            <p className="text-slate-400 font-black uppercase text-xs tracking-widest">No Leads Assigned To You</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {files.map((file) => (
-              <div key={file._id} className="bg-white border border-slate-100 p-8 rounded-[2.5rem] shadow-sm hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.06)] transition-all duration-500 group flex flex-col justify-between overflow-hidden relative">
+              /* ✅ Canonical class: rounded-4xl */
+              <div key={file._id} className="bg-white border border-slate-100 p-8 rounded-4xl shadow-sm hover:shadow-xl transition-all duration-500 group flex flex-col justify-between overflow-hidden relative">
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-8">
-                    <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center border border-slate-100">
+                    <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
                       <FileIcon />
                     </div>
                     <div className="text-right">
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Batch Size</p>
-                      <p className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {file.totalLeads} <span className="text-[11px] text-slate-400 font-bold tracking-tight">Leads</span>
+                      <p className="text-2xl font-black text-slate-900 transition-colors">
+                        {file.totalLeads} <span className="text-[11px] text-slate-400 font-bold tracking-tight">Records</span>
                       </p>
                     </div>
                   </div>
 
-                  <h2 className="font-black text-xl text-slate-800 break-all leading-tight mb-6">{file.fileName}</h2>
+                  <h2 className="font-black text-xl text-slate-800 break-all leading-tight mb-6 uppercase tracking-tight">{file.fileName}</h2>
                   
-                  <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-tighter shadow-sm">
-                    <div className="flex flex-col text-xs font-bold text-slate-600 italic">
+                  <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-tighter">
+                    <div className="flex flex-col text-xs font-bold text-slate-600">
                         <span>{formatDate(file.createdAt)}</span>
-                        <span>{formatTime(file.createdAt)}</span>
+                        <span className="text-slate-400 font-medium">{formatTime(file.createdAt)}</span>
                     </div>
                   </div>
                 </div>
 
                 <button
                   onClick={() => downloadFile(file._id, file.fileName)}
-                  className="w-full mt-8 flex items-center justify-center bg-slate-900 text-white py-4.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer hover:bg-slate-800 shadow-xl shadow-slate-100 active:scale-[0.98] relative z-10"
+                  className="w-full mt-8 flex items-center justify-center bg-slate-900 text-white py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer hover:bg-blue-600 shadow-lg active:scale-95 relative z-10"
                 >
                   <DownloadIcon /> Export Lead Set
                 </button>

@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: import.meta.env.VITE_API_URL || "https://your-backend.onrender.com/api",
 });
 
-// Automatically add the token from LocalStorage to the Authorization header
+// ✅ Attach token to every request header
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) {
+  if (token && token !== "undefined") {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

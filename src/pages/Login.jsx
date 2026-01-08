@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
+// Minimal Lock Icon for branding
 const LockIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -17,53 +18,59 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ Updated Session Check: Looks for Token in LocalStorage
+  // ✅ SESSION CHECK: Runs once when the page loads
   useEffect(() => {
-    let cancelled = false;
+    let isMounted = true;
     const token = localStorage.getItem("token");
 
+    // If no token exists, just stop the loading screen
     if (!token) {
       setChecking(false);
       return;
     }
 
-    // Verify token with backend
+    // If token exists, verify it with the backend
     API.get("/auth/check")
       .then((res) => {
-        if (cancelled) return;
+        if (!isMounted) return;
         const { role, username } = res.data;
 
         if (role) {
+          // Sync local storage just in case
           localStorage.setItem("role", role);
           localStorage.setItem("username", username);
+          // Redirect to the appropriate dashboard
           navigate(role === "admin" ? "/admin" : "/user", { replace: true });
         }
       })
       .catch(() => {
-        // If token is invalid/expired, clear it
+        if (!isMounted) return;
+        // Token is invalid/expired, clear it so we don't loop
         localStorage.clear();
         setChecking(false);
       });
 
-    return () => (cancelled = true);
+    return () => { isMounted = false; };
   }, [navigate]);
 
+  // ✅ LOGIN HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      // ✅ 1. Request login (Token comes back in the Body now, not Cookie)
       const res = await API.post("/auth/login", { email, password });
+      
+      // Extract data from the JSON body (Bearer Token system)
       const { token, role, username } = res.data;
 
-      // ✅ 2. Store EVERYTHING in LocalStorage (Fixes iPhone refresh loop)
+      // Store in LocalStorage - This is what Safari allows while it blocks cookies
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
       localStorage.setItem("username", username);
 
-      // ✅ 3. Navigate based on role
+      // Navigate to dashboard
       navigate(role === "admin" ? "/admin" : "/user", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");
@@ -72,6 +79,7 @@ export default function Login() {
     }
   };
 
+  // ✅ LOADING STATE
   if (checking) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#fcfdfe]">
@@ -83,8 +91,10 @@ export default function Login() {
     );
   }
 
+  // ✅ LOGIN UI
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fcfdfe] px-6 relative overflow-hidden selection:bg-blue-100">
+      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full -z-10">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-50 rounded-full blur-[120px] opacity-60"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-slate-100 rounded-full blur-[100px] opacity-40"></div>
@@ -96,7 +106,9 @@ export default function Login() {
             <LockIcon />
           </div>
           <div className="text-center">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-blue-600">DATATECH</h2>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-blue-600">
+              DATATECH
+            </h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Portal Authentication</p>
           </div>
         </div>
@@ -113,7 +125,7 @@ export default function Login() {
 
           <div className="space-y-2 group">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-blue-600">
-                Work Email
+              Work Email
             </label>
             <input
               type="email"
@@ -127,7 +139,7 @@ export default function Login() {
 
           <div className="space-y-2 group">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-blue-600">
-                Password
+              Password
             </label>
             <input
               type="password"
@@ -148,9 +160,9 @@ export default function Login() {
         </form>
 
         <footer className="mt-10 text-center">
-            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
-                Protected by End-to-End Encryption
-            </p>
+          <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+            Protected by End-to-End Encryption
+          </p>
         </footer>
       </div>
     </div>

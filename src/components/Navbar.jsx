@@ -27,14 +27,22 @@ export default function Navbar({ role }) {
 
   const handleLogout = async () => {
     try {
-      // ✅ withCredentials is sent automatically by our API instance
+      // ✅ We still notify the backend, but we don't rely on it to clear cookies
       await API.post("/auth/logout");
     } catch (err) {
-      console.error("Session termination failed:", err);
+      console.error("Logout Error:", err);
+      // If the backend call fails, we still want to log out the user locally
+      console.warn("Server-side logout skipped or failed, clearing local session.");
     } finally {
-      // ✅ Completely wipe the client-side session
+      // ✅ CRITICAL: This is what actually logs you out on iPhone/Mobile
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
+      
+      // Optional: clear everything to be safe
       localStorage.clear();
-      // ✅ Force redirect to login page
+
+      // ✅ Redirect to login page and prevent "Back" button usage
       navigate("/", { replace: true });
     }
   };
@@ -60,8 +68,8 @@ export default function Navbar({ role }) {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex flex-col items-end mr-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated </p>
+          <div className="hidden sm:flex flex-col items-end mr-2 text-right">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated</p>
             <p className="text-xs font-bold text-slate-900 leading-none">{username}</p>
           </div>
 

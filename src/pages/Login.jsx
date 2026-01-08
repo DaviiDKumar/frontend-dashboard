@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
-// Minimal Lock Icon for branding
 const LockIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -18,10 +17,17 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // check existing session (cookie)
+  // ✅ Updated Session Check: Looks for Token in LocalStorage
   useEffect(() => {
     let cancelled = false;
+    const token = localStorage.getItem("token");
 
+    if (!token) {
+      setChecking(false);
+      return;
+    }
+
+    // Verify token with backend
     API.get("/auth/check")
       .then((res) => {
         if (cancelled) return;
@@ -33,7 +39,11 @@ export default function Login() {
           navigate(role === "admin" ? "/admin" : "/user", { replace: true });
         }
       })
-      .catch(() => setChecking(false));
+      .catch(() => {
+        // If token is invalid/expired, clear it
+        localStorage.clear();
+        setChecking(false);
+      });
 
     return () => (cancelled = true);
   }, [navigate]);
@@ -44,12 +54,16 @@ export default function Login() {
     setError("");
 
     try {
+      // ✅ 1. Request login (Token comes back in the Body now, not Cookie)
       const res = await API.post("/auth/login", { email, password });
-      const { role, username } = res.data;
+      const { token, role, username } = res.data;
 
+      // ✅ 2. Store EVERYTHING in LocalStorage (Fixes iPhone refresh loop)
+      localStorage.setItem("token", token);
       localStorage.setItem("role", role);
       localStorage.setItem("username", username);
 
+      // ✅ 3. Navigate based on role
       navigate(role === "admin" ? "/admin" : "/user", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Invalid credentials");
@@ -71,7 +85,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fcfdfe] px-6 relative overflow-hidden selection:bg-blue-100">
-      {/* Abstract Background Design */}
       <div className="absolute top-0 left-0 w-full h-full -z-10">
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-50 rounded-full blur-[120px] opacity-60"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-slate-100 rounded-full blur-[100px] opacity-40"></div>
@@ -83,7 +96,7 @@ export default function Login() {
             <LockIcon />
           </div>
           <div className="text-center">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2">DATATECH</h2>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-none mb-2 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-blue-600">DATATECH</h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Portal Authentication</p>
           </div>
         </div>
@@ -113,11 +126,9 @@ export default function Login() {
           </div>
 
           <div className="space-y-2 group">
-            <div className="flex justify-between items-center ml-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest transition-colors group-focus-within:text-blue-600">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 transition-colors group-focus-within:text-blue-600">
                 Password
-              </label>
-            </div>
+            </label>
             <input
               type="password"
               required
@@ -136,13 +147,10 @@ export default function Login() {
           </button>
         </form>
 
-        <footer className="mt-10 text-center space-y-2">
+        <footer className="mt-10 text-center">
             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
                 Protected by End-to-End Encryption
             </p>
-            <div className="flex justify-center gap-4 opacity-20 grayscale">
-                {/* Visual filler logo icons could go here */}
-            </div>
         </footer>
       </div>
     </div>

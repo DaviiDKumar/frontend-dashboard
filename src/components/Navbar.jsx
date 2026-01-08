@@ -61,7 +61,7 @@ export default function Navbar({ role }) {
         {/* Action Buttons */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex flex-col items-end mr-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated as</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Authenticated </p>
             <p className="text-xs font-bold text-slate-900 leading-none">{username}</p>
           </div>
 

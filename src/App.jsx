@@ -3,21 +3,23 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import UserDashboard from "./pages/UserDashboard";
+import LeadDetails from "./pages/LeadDetails"; 
+import ReassignPage from "./pages/ReassignPage";
+import SecPage from "./pages/SecPage";
 
-// ✅ Improved Gatekeeper logic
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
-  // Check for missing token OR literal "undefined"/"null" strings
-  if (!token || token === "undefined" || token === "null") {
+  // Verify token exists and isn't a string literal "null"
+  const isAuthenticated = token && token !== "undefined" && token !== "null";
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Role-based access control
+  // Redirect if trying to access a role-restricted route
   if (allowedRole && role !== allowedRole) {
-    // If they are an admin trying to go to /user or vice versa, 
-    // send them to their correct dashboard instead of just /login
     return <Navigate to={role === "admin" ? "/admin" : "/user"} replace />;
   }
 
@@ -28,31 +30,28 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
 
-        {/* Admin Guarded Routes */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
+        {/* --- Admin Routes --- */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRole="admin"><AdminDashboard /></ProtectedRoute>
+        } />
+        <Route path="/admin/reassign" element={
+          <ProtectedRoute allowedRole="admin"><ReassignPage /></ProtectedRoute>
+        } />
+        <Route path="/admin/security" element={
+          <ProtectedRoute allowedRole="admin"><SecPage /></ProtectedRoute>
+        } />
 
-        {/* User Guarded Routes */}
-        <Route 
-          path="/user" 
-          element={
-            <ProtectedRoute allowedRole="user">
-              <UserDashboard />
-            </ProtectedRoute>
-          } 
-        />
+        {/* --- User Routes --- */}
+        <Route path="/user" element={
+          <ProtectedRoute allowedRole="user"><UserDashboard /></ProtectedRoute>
+        } />
+        <Route path="/user/leads/:id" element={
+          <ProtectedRoute allowedRole="user"><LeadDetails /></ProtectedRoute>
+        } />
 
-        {/* Catch-all: Redirect to Home instead of Login for better UX */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

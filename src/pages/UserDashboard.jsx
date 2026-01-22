@@ -16,6 +16,11 @@ const StackIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
 );
 
+// New Clock Icon for Pending
+const ClockIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+
 export default function UserDashboard() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,14 +59,14 @@ export default function UserDashboard() {
   const totalUserLeads = files.reduce((acc, curr) => acc + (curr.totalLeads || 0), 0);
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen text-slate-900 pb-24 font-sans selection:bg-indigo-100">
+    <div className="bg-[#f8fafc] min-h-screen text-slate-900 pt-16 pb-24 font-sans selection:bg-indigo-100">
       <Navbar role="user" />
 
       <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-16">
         
         {/* --- LUXE HEADER --- */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 border-b border-slate-200 pb-12">
-          <div className="space-y-3">
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 border-b border-slate-200 pb-12">
+          <div className="space-y-3 flex-1">
             <div className="inline-flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-full">
                <span className="relative flex h-2 w-2">
                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -75,17 +80,34 @@ export default function UserDashboard() {
             <p className="text-sm font-medium text-slate-400 max-w-md">Manage your assigned data batches and lead inventory in real-time.</p>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Global Lead Balance</p>
-              <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                {totalUserLeads.toLocaleString()}
-              </p>
-            </div>
-            <div className="h-12 w-[1px] bg-slate-200 hidden md:block"></div>
-            <div className="hidden md:block">
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Batches</p>
-               <p className="text-4xl font-black text-indigo-600 tracking-tighter">{files.length}</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-8 w-full lg:w-auto">
+            {/* PENDING ACCESS CARD */}
+        
+<div 
+  onClick={() => navigate("/user/pending")}
+  className="flex items-center gap-4 bg-amber-50 border border-amber-100 p-4 rounded-[1.5rem] cursor-pointer hover:bg-amber-100 transition-all group active:scale-95 shadow-sm"
+>
+  <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-amber-200 group-hover:rotate-12 transition-transform">
+    <ClockIcon />
+  </div>
+  <div>
+    <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Follow-ups</p>
+    <p className="text-sm font-black text-slate-900 uppercase">Pending Queue</p>
+  </div>
+</div>
+
+            <div className="flex items-center gap-6">
+                <div className="text-right">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Global Balance</p>
+                <p className="text-4xl font-black text-slate-900 tracking-tighter">
+                    {totalUserLeads.toLocaleString()}
+                </p>
+                </div>
+                <div className="h-12 w-[1px] bg-slate-200 hidden md:block"></div>
+                <div className="hidden md:block">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Batches</p>
+                <p className="text-4xl font-black text-indigo-600 tracking-tighter">{files.length}</p>
+                </div>
             </div>
           </div>
         </header>

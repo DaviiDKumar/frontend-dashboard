@@ -13,25 +13,18 @@ import LeadDetails from "./pages/LeadDetails";
 import ReassignPage from "./pages/ReassignPage";
 import SecPage from "./pages/SecPage";
 import PendingLeads from "./pages/PendingLeads"; 
+import FlushedLeads from "./pages/FlushedLeads"; // ADDED THIS
 
 // --- PUBLIC AGENCY PAGES ---
-// import About from "./pages/About";
-// import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
-// import Terms from "./pages/Terms";
-// import Privacy from "./pages/Privacy";
 
 /**
  * Global Layout Wrapper
- * Ensures Navbar is always present and content is spaced correctly
  */
 function Layout({ children }) {
   return (
     <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
       <Navbar />
-      {/* This wrapper ensures that content starts below the sticky navbar.
-        If your Navbar is roughly 80px tall, this ensures no overlap.
-      */}
       <main className="flex-1">
         {children}
       </main>
@@ -41,7 +34,6 @@ function Layout({ children }) {
 
 /**
  * Route Guard
- * Handles authentication and role-based access
  */
 function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
@@ -54,7 +46,6 @@ function ProtectedRoute({ children, allowedRole }) {
   }
 
   if (allowedRole && role !== allowedRole) {
-    // If a user tries to access admin, send them to user dashboard and vice-versa
     return <Navigate to={role === "admin" ? "/admin" : "/user"} replace />;
   }
 
@@ -68,12 +59,8 @@ function App() {
         <Routes>
           {/* --- Public Agency Routes --- */}
           <Route path="/" element={<Home />} />
-          {/* <Route path="/about" element={<About />} />
-          <Route path="/careers" element={<Careers />} />
-         
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} /> */}
-           <Route path="/contact" element={<Contact />} />
+          <Route path="/contact" element={<Contact />} />
+          
           {/* Auth */}
           <Route path="/login" element={<Login />} />
 
@@ -81,6 +68,12 @@ function App() {
           <Route path="/admin" element={
             <ProtectedRoute allowedRole="admin">
               <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          {/* NEW ARCHIVE ROUTE */}
+          <Route path="/admin/archives" element={
+            <ProtectedRoute allowedRole="admin">
+              <FlushedLeads />
             </ProtectedRoute>
           } />
           <Route path="/admin/reassign" element={
@@ -111,7 +104,7 @@ function App() {
             </ProtectedRoute>
           } />
 
-          {/* Catch-all Redirect: If no route matches, go Home */}
+          {/* Catch-all Redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

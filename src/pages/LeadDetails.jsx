@@ -24,16 +24,8 @@ export default function LeadDetails() {
     const fetchLeads = async () => {
         try {
             const res = await API.get(`/files/view/${id}`);
-            
-            // Clean phone numbers by removing "p:" prefix
-            const cleanedLeads = (res.data.leads || []).map(lead => ({
-                ...lead,
-                phone_number: lead.phone_number?.startsWith('p:') 
-                    ? lead.phone_number.replace('p:', '') 
-                    : lead.phone_number
-            }));
-
-            setLeads(cleanedLeads);
+            // Filter out 'pending' status leads from this specific batch view
+            setLeads(res.data.leads || []);
             setFileName(res.data.fileName || "Batch Data");
         } catch (err) {
             navigate("/user");
@@ -44,8 +36,10 @@ export default function LeadDetails() {
 
     const updateLeadStatus = async (leadId, newStatus) => {
         try {
+            // API Call
             await API.patch(`/files/status/${leadId}`, { status: newStatus });
             
+            // If marked as pending, remove from local list with animation delay
             if (newStatus === 'pending') {
                 setLeads(prev => prev.map(l => l._id === leadId ? { ...l, exiting: true } : l));
                 setTimeout(() => {
@@ -69,104 +63,61 @@ export default function LeadDetails() {
         );
     }, [activeLeads, searchTerm]);
 
-    if (loading) return <div className="h-screen flex items-center justify-center bg-white text-[10px] font-black tracking-[0.4em] text-blue-600">INITIALIZING_BATCH...</div>;
+    if (loading) return <div className="h-screen flex items-center justify-center bg-white text-[10px] font-black tracking-[0.4em] text-slate-400">SYNCING BATCH...</div>;
 
     return (
-        <div className="flex h-screen flex-col pt-15 bg-[#F8FAFC] font-sans text-slate-900 overflow-hidden">
-            <header className="z-50 border-b border-slate-200 bg-white/80 px-4 py-4 backdrop-blur-md">
-                <div className="max-w-5xl mx-auto flex items-center justify-between gap-6">
-                    <button onClick={() => navigate("/user")} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-blue-600">
-                        <ArrowLeft />
-                    </button>
+        <div className="flex h-screen flex-col bg-[#F8FAFC] font-sans text-slate-900 overflow-hidden">
+            <header className="z-50 border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur-md">
+                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                    <button onClick={() => navigate("/user")} className="p-2 hover:bg-slate-100 rounded-xl transition-all"><ArrowLeft /></button>
                     
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-xs font-black uppercase truncate tracking-widest text-slate-900">{fileName}</h1>
+                        <h1 className="text-sm font-black uppercase truncate tracking-tight">{fileName}</h1>
                         <button 
                             onClick={() => navigate("/user/pending")}
-                            className="text-[8px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.2em] mt-1 flex items-center gap-2"
+                            className="text-[9px] font-bold text-amber-500 hover:text-amber-600 uppercase tracking-widest mt-1 flex items-center gap-1"
                         >
-                            <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
-                            Access Follow-up Terminal
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                            View Follow-up Queue
                         </button>
                     </div>
 
-                    <div className="relative w-40 sm:w-72 group">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors">
-                            <SearchIcon />
-                        </div>
-                        <input 
-                            type="text" 
-                            placeholder="FILTER DATA..." 
-                            value={searchTerm} 
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-bold outline-none focus:ring-4 focus:ring-blue-500/5 focus:bg-white transition-all uppercase placeholder:text-slate-300" 
-                        />
+                    <div className="relative w-32 sm:w-60">
+                        <input type="text" placeholder="SEARCH..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-slate-100 border-none rounded-xl py-2 pl-9 pr-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all" />
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                <div className="max-w-5xl mx-auto grid grid-cols-1 gap-4">
-                    {filteredLeads.map((lead) => (
+            <main className="flex-1 overflow-y-auto p-4">
+                <div className="max-w-4xl mx-auto space-y-3">
+                    {filteredLeads.map((lead, idx) => (
                         <div 
                             key={lead._id} 
-                            className={`flex flex-col sm:flex-row sm:items-center gap-4 p-6 rounded-[2rem] border transition-all duration-500 
+                            className={`flex items-center gap-4 p-4 rounded-[2rem] border transition-all duration-500 
                             ${lead.exiting ? 'opacity-0 scale-95 -translate-x-10' : 'opacity-100 scale-100'}
-                            ${lead.status === 'done' ? 'bg-emerald-50/30 border-emerald-100 shadow-none' : 'bg-white border-white shadow-sm hover:shadow-md'}`}
+                            ${lead.status === 'done' ? 'bg-emerald-50/40 border-emerald-100' : 'bg-white border-white shadow-sm'}`}
                         >
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-1">
-                                    <h3 className={`text-sm font-black uppercase tracking-tight ${lead.status === 'done' ? 'text-slate-300 line-through' : 'text-slate-900'}`}>
-                                        {lead.full_name}
-                                    </h3>
-                                    {lead.status === 'rejected' && (
-                                        <span className="text-[8px] font-black bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full uppercase tracking-widest">Rejected</span>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap gap-x-6 gap-y-1 text-[10px] font-bold text-slate-700 uppercase font-mono">
-                                    <span className="flex items-center gap-1.5">
-                                        {lead.phone_number}
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-green-600">
-                                        <span className="text-black">LOC:</span>{lead.city}
-                                    </span>
+                                <h3 className={`text-sm font-black uppercase ${lead.status === 'done' ? 'text-slate-400 line-through' : ''}`}>{lead.full_name}</h3>
+                                <div className="flex gap-x-4 text-[10px] font-bold text-slate-400 uppercase">
+                                    <span>{lead.phone_number}</span>
+                                    <span>{lead.city}</span>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-slate-50">
-                                {/* Done Button */}
+                            <div className="flex items-center gap-2">
                                 <button onClick={() => updateLeadStatus(lead._id, 'done')} 
-                                    className={`h-11 w-11 rounded-2xl flex items-center justify-center border-2 transition-all active:scale-90
-                                    ${lead.status === 'done' 
-                                        ? 'bg-emerald-500 border-emerald-500 text-white' 
-                                        : 'bg-white border-slate-100 text-slate-200 hover:border-emerald-500 hover:text-emerald-500'}`}>
-                                    <CheckIcon />
-                                </button>
+                                    className={`h-9 w-9 rounded-xl flex items-center justify-center border-2 transition-all ${lead.status === 'done' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-100 text-slate-200 hover:border-emerald-200'}`}><CheckIcon /></button>
                                 
-                                {/* Pending Button */}
                                 <button onClick={() => updateLeadStatus(lead._id, 'pending')} 
-                                    className="h-11 w-11 rounded-2xl flex items-center justify-center border-2 bg-white border-slate-100 text-slate-200 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all active:scale-90 shadow-sm shadow-blue-100/20">
-                                    <ClockIcon />
-                                </button>
+                                    className="h-9 w-9 rounded-xl flex items-center justify-center border-2 bg-white border-slate-100 text-slate-200 hover:bg-amber-500 hover:border-amber-500 hover:text-white transition-all"><ClockIcon /></button>
                                 
-                                {/* Rejected Button */}
                                 <button onClick={() => updateLeadStatus(lead._id, 'rejected')} 
-                                    className={`h-11 w-11 rounded-2xl flex items-center justify-center border-2 transition-all active:scale-90
-                                    ${lead.status === 'rejected' 
-                                        ? 'bg-rose-500 border-rose-500 text-white' 
-                                        : 'bg-white border-slate-100 text-slate-200 hover:border-rose-500 hover:text-rose-500'}`}>
-                                    <CrossIcon />
-                                </button>
+                                    className={`h-9 w-9 rounded-xl flex items-center justify-center border-2 transition-all ${lead.status === 'rejected' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-slate-100 text-slate-200 hover:border-rose-200'}`}><CrossIcon /></button>
                             </div>
                         </div>
                     ))}
-
-                    {filteredLeads.length === 0 && !loading && (
-                        <div className="py-20 text-center space-y-4">
-                            <div className="text-slate-200 flex justify-center"><SearchIcon /></div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">No matching data nodes found</p>
-                        </div>
-                    )}
                 </div>
             </main>
         </div>
